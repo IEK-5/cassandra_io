@@ -16,16 +16,9 @@ fi
 
 sudo mount -o loop "${storage_path}" "${storage_path}_mnt"
 
+docker container prune
 docker run \
        --name some-cassandra \
        -v $(pwd)/"${storage_path}_mnt":/var/lib/cassandra \
        -e HEAP_NEWSIZE=1M -e MAX_HEAP_SIZE=100M \
        -d cassandra
-
-# docker run \
-#        --name some-cassandra2 \
-#        -v $(pwd)/cassandra_2:/var/lib/cassandra \
-#        -e CASSANDRA_SEEDS=172.17.0.2 \
-#        -e HEAP_NEWSIZE=1M -e MAX_HEAP_SIZE=100M \
-#        -d cassandra
-
