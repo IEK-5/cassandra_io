@@ -253,12 +253,17 @@ class Cassandra_Files:
 
     def _delete(self, files):
         for filename, timestamp, chunk_order, chunk_id in files:
-            self._session.execute\
+            self._session.execute_async\
                 (self._queries['delete_from_files'],
                  [timestamp, filename, chunk_order])
-            self._session.execute\
-                (self._queries['delete_from_files_inode'],
-                 [chunk_id])
+            self._session.execute_async\
+                 (self._queries['delete_from_files_inode'],
+                  [chunk_id])
+
+
+    def _wait_jobs(self, jobs):
+        for job in jobs:
+            job.result()
 
 
     def download(self, cassandra_fn, ofn):
@@ -324,6 +329,7 @@ class Cassandra_Files:
 
         """
         timestamp = str(time.time())
+        jobs = []
 
         for chunk_order, data in enumerate(read_by_chunks(ifn)):
             # hashing timestamp and filename prevents problems with
@@ -333,14 +339,17 @@ class Cassandra_Files:
             # 'links' for every chunk_id, however this solution
             # involves counters, and they can be buggy in cassandra.
             chunk_id = _hash((cassandra_fn, timestamp, data))
-            self._session.execute\
-                (self._queries['insert_files'],
-                 (cassandra_fn, timestamp,
-                  chunk_order, chunk_id))
-            self._session.execute\
-                (self._queries['insert_files_inode'],
-                 (chunk_id, data))
+            jobs.append\
+                (self._session.execute_async\
+                 (self._queries['insert_files'],
+                  (cassandra_fn, timestamp,
+                   chunk_order, chunk_id)))
+            jobs.append\
+                (self._session.execute_async\
+                 (self._queries['insert_files_inode'],
+                  (chunk_id, data)))
 
+        self._wait_jobs(jobs)
         self._session.execute\
             (self._queries['insert_files_timestamp'],
              (cassandra_fn, timestamp))
