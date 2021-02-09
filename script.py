@@ -81,14 +81,17 @@ def touch_random(fname, size = 10485760):
 class Cassandra_Files:
 
 
-    def __init__(self, cluster_ips, keyspace_suffix=''):
+    def __init__(self, cluster_ips, keyspace_suffix='', chunk_size = 1048576):
         """
         :keyspace_suffix: suffix of the keyspace
 
         :cluster_ips: cluster ips
 
+        :chunk_size: size of chunks to write for files
+
         """
         self._cluster_ips = cluster_ips
+        self._chunk_size = chunk_size
         self._cluster = Cluster(cluster_ips)
 
         keyspace_name = 'cassandra_files_' + keyspace_suffix
@@ -331,7 +334,8 @@ class Cassandra_Files:
         timestamp = str(time.time())
         jobs = []
 
-        for chunk_order, data in enumerate(read_by_chunks(ifn)):
+        for chunk_order, data in enumerate\
+            (read_by_chunks(ifn, self._chunk_size)):
             # hashing timestamp and filename prevents problems with
             # files deleting. however, this does not allow
             # deduplication, e.g. two identical files will occupy
