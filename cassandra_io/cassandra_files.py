@@ -1,84 +1,29 @@
-import os
 import time
-import hashlib
-
-from io import BytesIO
 
 from cassandra.cluster import Cluster
 
-
-def read_by_chunks(fname, chunk = 1048576):
-    """Generator to ready file by file chunks
-
-    :fname: filename
-
-    :chunk: size of chunk in bytes
-
-    """
-    with open(fname, 'rb') as f:
-        data = f.read(chunk)
-        while data:
-            yield data
-            data = f.read(chunk)
-
-
-def write_by_chunks(generator, ofn):
-    """Write output file chunk generator to a file
-
-    :generator: generator that yield byte chunks
-
-    :ofn: output filename
-
-    """
-    with open(ofn, 'wb') as f:
-        for data in generator:
-            f.write(data)
-
-
-def write_bytesio_by_chunk(generator):
-    """Write output file chunk in memory
-
-    :generator: generator that yield byte chunks
-
-    :return: BytesIO buffer
-    """
-    res = BytesIO()
-
-    for data in generator:
-        res.write(data)
-
-    res.seek(0)
-    return res
-
-
-def _hash(key):
-    h = hashlib.sha512()
-
-    if isinstance(key, bytes):
-        h.update(key)
-        return h.hexdigest()
-
-    if not isinstance(key, (tuple, list)):
-        h.update(str(key).encode('utf-8'))
-        return h.hexdigest()
-
-    for x in key:
-        h.update(_hash(x).encode('utf-8'))
-    return h.hexdigest()
-
-
-def touch(fname, size = 10485760):
-    with open(fname, 'wb') as f:
-        f.seek(size - 1)
-        f.write(b'\0')
-
-
-def touch_random(fname, size = 10485760):
-    with open(fname, 'wb') as f:
-        f.write(os.urandom(size))
+from cassandra_io.utils import \
+    read_by_chunks, write_by_chunks, \
+    write_bytesio_by_chunk, hash_any
 
 
 class Cassandra_Files:
+    """Store files in cassandra storage
+
+    File is split onto chunks and files are stored with
+    timestamps. Synchronous write of the same file are allowed, only
+    the most recent successfully uploaded version is for downloads.
+
+    Use 'upload' method to upload a local file.
+
+    Use 'delete' to completely delete file from the cassandra storage.
+
+    Use 'download' to download file to a local file, and
+    'download_bytesio' to download file to a memory bytes stream.
+
+    Dangling chunks can be removed with 'cleanup' method.
+
+    """
 
 
     def __init__(self, cluster_ips, keyspace_suffix='', chunk_size = 1048576):
@@ -336,7 +281,8 @@ class Cassandra_Files:
             # double the size. alternatively, one can keep number of
             # 'links' for every chunk_id, however this solution
             # involves counters, and they can be buggy in cassandra.
-            chunk_id = _hash((cassandra_fn, timestamp, data))
+            chunk_id = hash_any((cassandra_fn,
+                                 timestamp, data))
             self._session.execute\
                 (self._queries['insert_files'],
                  (cassandra_fn, timestamp,
@@ -348,6 +294,3 @@ class Cassandra_Files:
         self._session.execute\
             (self._queries['insert_files_timestamp'],
              (cassandra_fn, timestamp))
-
-
-cfs = Cassandra_Files(cluster_ips = ['172.17.0.2'])

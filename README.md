@@ -1,3 +1,5 @@
-# Using Apache Cassandra as distributed storage
+# Using Apache Cassandra as a distributed file storage
 
-The main problem this repo tries to solve is storing large files
+Files are stored in chunks. Simultaneous writes are allowed, with
+several version of a file are timestamped. Only the most recent file
+is downloaded.
