@@ -175,6 +175,14 @@ class Cassandra_Files:
             FROM files
             WHERE
             filename=? and timestamp<?""")
+        res['select_contains'] = \
+            self._session.prepare\
+            ("""
+            SELECT count(*)
+            FROM files_timestamp
+            WHERE
+            filename=?""")
+
         return res
 
 
@@ -207,6 +215,14 @@ class Cassandra_Files:
             self._session.execute\
                 (self._queries['delete_from_files_inode'],
                  [chunk_id])
+
+
+    def __contains__(self, cassandra_fn):
+        res = self._session.execute\
+            (self._queries['select_contains'],
+             [cassandra_fn]).one()[0]
+
+        return res != 0
 
 
     def download(self, cassandra_fn, ofn):
