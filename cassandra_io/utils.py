@@ -1,5 +1,9 @@
 import os
+import geohash
 import hashlib
+import itertools
+
+import numpy as np
 
 from io import BytesIO
 
@@ -73,3 +77,22 @@ def touch(fname, size = 10485760):
 def touch_random(fname, size = 10485760):
     with open(fname, 'wb') as f:
         f.write(os.urandom(size))
+
+
+def bbox2hash(bbox, hash_length):
+    """Split bounding box coordinates onto smaller boxes
+
+    :bbox: (lat_min, lon_min, lat_max, lon_max)
+
+    :hash_length: maximum of the geohash string
+
+    :return: list of hashes meshing the bbox
+    """
+    by = geohash.decode_exactly\
+        (geohash.encode\
+         (*bbox[:2])[:hash_length])[2:]
+    res = (geohash.encode(*x)[:hash_length] \
+           for x in itertools.product\
+           (np.arange(bbox[0],bbox[2] + by[0],by[0]),
+            np.arange(bbox[1],bbox[3] + by[1],by[1])))
+    return list(set(res))
