@@ -1,13 +1,13 @@
 import time
 
-from cassandra.cluster import Cluster
+from cassandra_io.base import Cassandra_Base
 
 from cassandra_io.utils import \
     read_by_chunks, write_by_chunks, \
     write_bytesio_by_chunk, hash_any
 
 
-class Cassandra_Files:
+class Cassandra_Files(Cassandra_Base):
     """Store files in cassandra storage
 
     File is split onto chunks and files are stored with
@@ -26,38 +26,30 @@ class Cassandra_Files:
     """
 
 
-    def __init__(self, cluster_ips, keyspace_suffix='', chunk_size = 1048576):
+    def __init__(self, keyspace_suffix='', chunk_size = 1048576,
+                 **kwargs):
         """
         :keyspace_suffix: suffix of the keyspace
 
-        :cluster_ips: cluster ips
-
         :chunk_size: size of chunks to write for files
 
-        """
-        self._cluster_ips = cluster_ips
-        self._chunk_size = chunk_size
-        self._cluster = Cluster(cluster_ips)
+        :kwargs: arguments passed to Cassandra_Base
 
-        keyspace_name = 'cassandra_files_' + keyspace_suffix
-        self._init_keyspace(keyspace_name = keyspace_name)
-        self._session = self._cluster.connect(keyspace_name)
-        self._queries = self._create_tables_queries()
-        for _, query in self._queries.items():
+        """
+        if 'keyspace' not in kwargs:
+            kwargs['keyspace'] = 'cassandra_files'
+        kwargs['keyspace'] += '_' + keyspace_suffix
+        super().__init__(**kwargs)
+        self._chunk_size = chunk_size
+
+        self._session = self._cluster.connect(self._keyspace)
+        queries = self._create_tables_queries()
+        for _, query in queries.items():
             self._session.execute(query)
+        self._queries.update(queries)
         self._queries.update(self._insert_queries())
         self._queries.update(self._select_queries())
         self._queries.update(self._delete_queries())
-
-
-    def _init_keyspace(self, keyspace_name):
-        session = self._cluster.connect()
-        session.execute("""
-        CREATE KEYSPACE IF NOT EXISTS
-        %s
-        WITH REPLICATION = {
-        'class' : 'NetworkTopologyStrategy',
-        'datacenter1' : 1}""" % keyspace_name)
 
 
     def _create_tables_queries(self):
