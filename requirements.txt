@@ -1,3 +1,6 @@
 cassandra-driver
 geohash
 numpy
+tqdm
+shapely
+rtree
