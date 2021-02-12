@@ -16,12 +16,16 @@ class Cassandra_Files(Cassandra_Base):
 
     Use 'upload' method to upload a local file.
 
-    Use 'delete' to completely delete file from the cassandra storage.
+    Use 'delete' to completely delete file from the cassandra
+    storage.
 
     Use 'download' to download file to a local file, and
     'download_bytesio' to download file to a memory bytes stream.
 
     Dangling chunks can be removed with 'cleanup' method.
+
+    Note that 'delete' and 'cleanup' will not remove actual physical
+    space on cassandra.
 
     """
 

@@ -4,3 +4,4 @@ numpy
 tqdm
 shapely
 rtree
+pytest

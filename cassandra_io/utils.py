@@ -79,6 +79,25 @@ def touch_random(fname, size = 10485760):
         f.write(os.urandom(size))
 
 
+def get_hash(data):
+    h = hashlib.sha512()
+    h.update(data)
+    return h.hexdigest()
+
+
+def file_hash(fn):
+    with open(fn,'rb') as f:
+        return get_hash(f.read())
+
+
+def remove_file(fn):
+    try:
+        if fn:
+            os.remove(fn)
+    except:
+        pass
+
+
 def bbox2hash(bbox, hash_length):
     """Split bounding box coordinates onto smaller boxes
 

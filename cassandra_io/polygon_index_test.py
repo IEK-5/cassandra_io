@@ -1,6 +1,6 @@
 import os
 
-from open_elevation.polygon_index \
+from cassandra_io.polygon_index \
     import Polygon_File_Index
 
 
