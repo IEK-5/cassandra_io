@@ -1,0 +1,113 @@
+#!/bin/bash
+
+cd $(git rev-parse --show-toplevel)
+
+
+function set_defaults {
+    mount_point="$(realpath ./storage_mount_point)"
+    heap_newsize="100M"
+    max_heap_size="500M"
+    docker_name="cassandra_storage"
+    broadcast_address=""
+    seed_address=""
+    cassandra_tag="latest"
+}
+
+
+function print_help {
+    echo "Usage: $0 [OPTIONS]"
+    echo
+    echo "Join to/Start a cassandra storage"
+    echo
+    echo "  -h,--help         print this page"
+    echo
+    echo "  --mnt             set a mount point of the storage."
+    echo "                    Directory is created if it does not exist."
+    echo "                    Default: ${mount_point}"
+    echo
+    echo "  --heap_newsize, --max_heap_size"
+    echo "                    set HEAP_NEWSIZE and MAX_HEAP_SIZE for the cassandra storage."
+    echo "                    Default: heap_newsize=${heap_newsize}"
+    echo "                             max_heap_size=${max_heap_size}"
+    echo
+    echo "  --docker_name     Name of the docker container to run."
+    echo "                    Default: ${docker_name}"
+    echo
+    echo "  --cassandra_tag   tag of the cassandra build"
+    echo "                    Default: ${cassandra_tag}"
+    echo
+    echo "  --broadcast       Broadcast address"
+    echo "                    Local machine ip of the preferred network."
+    echo "                    Leave empty to use default docker overlay."
+    echo "                    Default: ${broadcast_address}"
+    echo
+    echo "  --seed            Seed address"
+    echo "                    Remote machine with running cassandra storage"
+    echo "                    and the exposed 7000 port."
+    echo "                    Leave empty to run a single node only."
+    echo "                    Default: ${seed_address}"
+    echo
+}
+
+
+function parse_args {
+    for i in "$@"
+    do
+        case "${i}" in
+            --mnt=*)
+                mount_point="${i#*=}"
+                shift
+                ;;
+            --heap_newsize=*)
+                heap_newsize="${i#*=}"
+                shift
+                ;;
+            --max_heap_size=*)
+                max_heap_size="${i#*=}"
+                shift
+                ;;
+            --docker_name=*)
+                docker_name="${i#*=}"
+                shift
+                ;;
+            --broadcast=*)
+                broadcast_address="${i#*=}"
+                shift
+                ;;
+            --seed=*)
+                seed_address="${i#*=}"
+                shift
+                ;;
+            --cassandra_tag=*)
+                cassandra_tag="${i#*=}"
+                shift
+                ;;
+            -h|--help)
+                print_help
+                exit
+        esac
+    done
+}
+
+
+function start_docker {
+    [ ! -z "${broadcast_address}" ] && \
+        broadcast_address="-e CASSANDRA_BROADCAST_ADDRESS=${broadcast_address} -p 7000:7000"
+    [ ! -z "${seed_address}" ] && \
+        seed_address="-e CASSANDRA_SEEDS=${seed_address}"
+
+    docker container prune
+    docker run \
+           --name "${docker_name}" \
+           -v "${mount_point}":/var/lib/cassandra \
+           -e HEAP_NEWSIZE="${heap_newsize}" \
+           -e MAX_HEAP_SIZE="${max_heap_size}" \
+           ${broadcast_address} ${seed_address} \
+           -d cassandra:${cassandra_tag}
+}
+
+
+set_defaults
+parse_args $@
+[ ! -e "${mount_point}" ] && mkdir -p "${mount_point}"
+start_docker
