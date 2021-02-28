@@ -92,7 +92,12 @@ function parse_args {
 
 function start_docker {
     [ ! -z "${broadcast_address}" ] && \
-        broadcast_address="-e CASSANDRA_BROADCAST_ADDRESS=${broadcast_address} -p 7000:7000"
+        broadcast_address="-e CASSANDRA_BROADCAST_ADDRESS=${broadcast_address} \
+                           -p ${broadcast_address}:7000:7000 \
+                           -p ${broadcast_address}:7001:7001 \
+                           -p ${broadcast_address}:7199:7199 \
+                           -p ${broadcast_address}:9042:9042 \
+                           -p ${broadcast_address}:9160:9160"
     [ ! -z "${seed_address}" ] && \
         seed_address="-e CASSANDRA_SEEDS=${seed_address}"
 
