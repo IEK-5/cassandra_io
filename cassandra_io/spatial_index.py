@@ -97,6 +97,12 @@ class Cassandra_Spatial_Index(Cassandra_Base):
             SELECT data_id
             FROM hash
             WHERE hash in ?""")
+        res['select_anydata'] = \
+            self._session.prepare\
+            ("""
+            SELECT data_id
+            FROM data
+            WHERE data_id=?""")
 
         return res
 
@@ -125,14 +131,19 @@ class Cassandra_Spatial_Index(Cassandra_Base):
                                   lon_first)
         hashes = bbox2hash(bbox, self._hash_length)
 
-        self._session.execute\
-            (self._queries['insert_data'],
-             [data_id, data_s])
+        if self._session.execute\
+           (self._queries['select_anydata'],
+            [data_id]).one() is not None:
+            return
 
         for h in hashes:
             self._session.execute\
                 (self._queries['insert_hash'],
                  [h, data_id])
+
+        self._session.execute\
+            (self._queries['insert_data'],
+             [data_id, data_s])
 
 
     def intersect(self, polygon, lon_first = True):
