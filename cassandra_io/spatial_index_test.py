@@ -8,6 +8,8 @@ from cassandra_io.spatial_index import \
 def dummy_index_data():
     x = Polygon_File_Index()
 
+    x.insert(data = {'file':'big',
+                     'polygon': [(0,0),(0,2),(2,2),(2,0)]})
     x.insert(data = {'file':'one',
                      'polygon': [(0,0),(0,1),(1,1),(1,0)]})
     x.insert(data={'file':'two',
@@ -17,16 +19,21 @@ def dummy_index_data():
     x.insert(data={'file':'four',
                    'polygon': [(0.1,0.1),(0.1,0.9),
                                (0.9,0.9),(0.9,0.1)]})
+    x.insert(data={'file':'five',
+                   'polygon': [(0,0),(0,0.0001),
+                               (0.0001,0.0001),(0.0001,0)]})
+    x.insert(data={'file':'six',
+                   'polygon': [(0,0),(0,0.00001),
+                               (0.00001,0.00001),(0.00001,0)]})
 
     return x
 
 
-def test_spatial_index(ips = ['172.17.0.2']):
+def test_spatial_index(ips = ['10.0.0.2']):
     try:
         cfs = Cassandra_Spatial_Index\
             (cluster_ips = ips,
-             keyspace = 'test_spatial_index',
-             hash_length = 4)
+             keyspace = 'test_spatial_index')
         idx = dummy_index_data()
 
         for x in idx.iterate():
