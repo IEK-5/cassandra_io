@@ -124,7 +124,8 @@ class Polygon_File_Index:
             schnitt = polygon.intersection\
                 (self._polygons[data['file']])
 
-            if schnitt.is_empty:
+            if schnitt.is_empty \
+               or not isinstance(schnitt, geometry.Polygon):
                 continue
 
             new_data = data
