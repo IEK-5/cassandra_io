@@ -105,6 +105,7 @@ function start_docker {
     docker run \
            --name "${docker_name}" \
            -v "${mount_point}":/var/lib/cassandra \
+           -v "$(realpath ./cassandra.yaml)":/etc/cassandra/cassandra.yaml \
            -e HEAP_NEWSIZE="${heap_newsize}" \
            -e MAX_HEAP_SIZE="${max_heap_size}" \
            ${broadcast_address} ${seed_address} \
