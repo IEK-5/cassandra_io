@@ -1,4 +1,5 @@
-from cassandra.cluster import Cluster
+from cassandra.cluster import \
+    Cluster, DCAwareRoundRobinPolicy
 
 
 class Cassandra_Base:
@@ -24,7 +25,9 @@ class Cassandra_Base:
         self._queries = {}
         self._queries.update(self._add_queries())
 
-        self._cluster = Cluster(self._cluster_ips)
+        self._cluster = Cluster\
+            (contact_points=self._cluster_ips,
+             load_balancing_policy=DCAwareRoundRobinPolicy(local_dc='datacenter1'))
         self.init_keyspace()
 
 
