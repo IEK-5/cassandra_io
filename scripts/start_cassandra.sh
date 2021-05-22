@@ -103,6 +103,7 @@ function start_docker {
 
     docker container prune
     docker run \
+	   --restart always \
            --name "${docker_name}" \
            -v "${mount_point}":/var/lib/cassandra \
            -v "$(realpath ./cassandra.yaml)":/etc/cassandra/cassandra.yaml \
