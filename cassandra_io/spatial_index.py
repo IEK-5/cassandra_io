@@ -202,6 +202,14 @@ class Cassandra_Spatial_Index(Cassandra_Base):
 
 
     def _query_bbox(self, bbox):
+        """Query data_ids from the Cassandra Spatial Index
+
+        :bbox: bounding box of the query
+
+        :return: a list of data_ids that *might have* a non-zero
+        intersection with a desired bbox
+
+        """
         cur_hash = self._hash_min
         hashes = bbox2hash(bbox, cur_hash)
         data_ids = []
@@ -226,13 +234,39 @@ class Cassandra_Spatial_Index(Cassandra_Base):
         return data_ids
 
 
-    def intersect(self, polygon, lon_first = True):
-        data_ids = set(self._query_bbox\
-             (self._polygon2bbox\
-              (polygon, lon_first)))
+    def intersect(self, polygons, lon_first = True):
+        """Produce an index that has an intersection with a given polygons
+
+        :polygons: either a list of coordinate tuples, or a
+        geometry.Polygon or geometry.MultiPolygon
+
+        """
+        if not isinstance(polygons, geometry.multipolygon.MultiPolygon):
+            if isinstance(polygons, geometry.polygon.Polygon):
+                polygons = geometry.multipolygon.MultiPolygon([polygons])
+            elif isinstance(polygons[0], tuple):
+                polygons = geometry.multipolygon.MultiPolygon\
+                    ([geometry.polygon.Polygon(polygons)])
+            else:
+                polygons = geometry.multipolygon.MultiPolygon\
+                    ([geometry.polygon.Polygon(x) for x in polygons])
+
+        data_ids = set()
+        for pl in polygons:
+            data_ids = data_ids.union\
+                (self._query_bbox\
+                 (self._polygon2bbox\
+                  (pl, lon_first)))
 
         index = Polygon_File_Index()
         for data_id in data_ids:
-            index.insert(self._load(data_id))
+            data = self._load(data_id)
 
-        return index.intersect(polygon)
+            # ignore data that has no intersection
+            if not polygons.intersects\
+               (geometry.polygon.Polygon(data['polygon'])):
+                continue
+
+            index.insert(data)
+
+        return index
