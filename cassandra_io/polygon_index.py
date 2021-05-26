@@ -32,20 +32,6 @@ class Polygon_File_Index:
             raise RuntimeError("'polygon' not in data")
 
 
-    def _get_data(self, x):
-        """Method to access the stored object
-
-        """
-        return x
-
-
-    def _set_data(self, x):
-        """Method to set the stored object
-
-        """
-        return x
-
-
     def insert(self, data):
         """Insert a polygon area to the index
 
@@ -64,7 +50,7 @@ class Polygon_File_Index:
         self._polygons[data['file']] = pl
         self._rtree.insert(hash_string(data['file']),
                            pl.bounds,
-                           obj = self._set_data(data))
+                           obj = data)
 
 
     def update(self, data):
@@ -98,8 +84,7 @@ class Polygon_File_Index:
         https://shapely.readthedocs.io/en/latest/manual.html#points
 
         """
-        for x in self._rtree.nearest(point, 1, objects='raw'):
-            data = self._get_data(x)
+        for data in self._rtree.nearest(point, 1, objects='raw'):
             if self._polygons[data['file']]\
                    .intersects(geometry.Point(point)):
                 yield data
@@ -118,9 +103,8 @@ class Polygon_File_Index:
         if not self._rtree.get_size():
             return res
 
-        for x in self._rtree.intersection(polygon.bounds,
-                                          objects='raw'):
-            data = self._get_data(x)
+        for data in self._rtree.intersection(polygon.bounds,
+                                             objects='raw'):
             schnitt = polygon.intersection\
                 (self._polygons[data['file']])
 
@@ -142,9 +126,8 @@ class Polygon_File_Index:
         if not self._rtree.get_size():
             return res
 
-        for x in self._rtree.intersection\
+        for data in self._rtree.intersection\
             (self._rtree.bounds, objects='raw'):
-            data = self._get_data(x)
             if how(data):
                 res.insert(data)
 
@@ -166,7 +149,7 @@ class Polygon_File_Index:
                                           objects = True):
             data += [{'id': x.id,
                       'bbox': x.bbox,
-                      'object': self._get_data(x.object)}]
+                      'object': x.object}]
 
         with open(fn, 'w') as f:
             json.dump(data, f)
@@ -187,7 +170,7 @@ class Polygon_File_Index:
 
                 self._rtree.insert\
                     (x['id'], x['bbox'],
-                     obj = self._set_data(x['object']))
+                     obj = x['object'])
                 self._polygons[x['object']['file']] = \
                     geometry.Polygon(x['object']['polygon'])
 
@@ -199,9 +182,8 @@ class Polygon_File_Index:
         if not self._rtree.get_size():
             yield from ()
 
-        for x in self._rtree.intersection(self._rtree.bounds,
-                                          objects = 'raw'):
-            data = self._get_data(x)
+        for data in self._rtree.intersection(self._rtree.bounds,
+                                             objects = 'raw'):
             if what in data:
                 yield data[what]
             else:
@@ -212,6 +194,6 @@ class Polygon_File_Index:
         if not self._rtree.get_size():
             yield from ()
 
-        for x in self._rtree.intersection(self._rtree.bounds,
-                                          objects = 'raw'):
-            yield self._get_data(x)
+        for data in self._rtree.intersection(self._rtree.bounds,
+                                             objects = 'raw'):
+            yield data
