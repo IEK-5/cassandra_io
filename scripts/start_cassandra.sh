@@ -8,6 +8,7 @@ function set_defaults {
     heap_newsize="100M"
     max_heap_size="500M"
     docker_name="cassandra_storage"
+    docker_maxmemory="3g"
     broadcast_address=""
     seed_address=""
     cassandra_tag="latest"
@@ -47,6 +48,9 @@ function print_help {
     echo "                    Leave empty to run a single node only."
     echo "                    Default: ${seed_address}"
     echo
+    echo "  --maxmemory       Hard limit on the memory usage"
+    echo "                    Default: ${docker_maxmemory}"
+    echo
 }
 
 
@@ -82,6 +86,10 @@ function parse_args {
                 cassandra_tag="${i#*=}"
                 shift
                 ;;
+	    --maxmemory=*)
+		docker_maxmemory="${i#*=}"
+		shift
+		;;
             -h|--help)
                 print_help
                 exit
@@ -104,6 +112,7 @@ function start_docker {
     docker container prune
     docker run \
 	   --restart always \
+	   --memory "${docker_maxmemory}" \
            --name "${docker_name}" \
            -v "${mount_point}":/var/lib/cassandra \
            -v "$(realpath ./cassandra.yaml)":/etc/cassandra/cassandra.yaml \
