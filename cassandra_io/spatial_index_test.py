@@ -29,7 +29,7 @@ def dummy_index_data():
     return x
 
 
-def test_spatial_index(ips = ['10.0.0.2']):
+def test_spatial_index(ips = ['10.2.2.2']):
     try:
         cfs = Cassandra_Spatial_Index\
             (cluster_ips = ips,
@@ -47,3 +47,7 @@ def test_spatial_index(ips = ['10.0.0.2']):
             cfs.drop_keyspace()
         except:
             pass
+
+
+if __name__ == '__main__':
+    test_spatial_index()

@@ -86,10 +86,10 @@ function parse_args {
                 cassandra_tag="${i#*=}"
                 shift
                 ;;
-	    --maxmemory=*)
-		docker_maxmemory="${i#*=}"
-		shift
-		;;
+	        --maxmemory=*)
+		        docker_maxmemory="${i#*=}"
+		        shift
+		        ;;
             -h|--help)
                 print_help
                 exit
@@ -111,8 +111,8 @@ function start_docker {
 
     docker container prune
     docker run \
-	   --restart always \
-	   --memory "${docker_maxmemory}" \
+	       --restart always \
+	       --memory "${docker_maxmemory}" \
            --name "${docker_name}" \
            -v "${mount_point}":/var/lib/cassandra \
            -v "$(realpath ./cassandra.yaml)":/etc/cassandra/cassandra.yaml \
