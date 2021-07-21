@@ -178,6 +178,13 @@ class Cassandra_Files(Cassandra_Base):
             FROM files_timestamp
             WHERE
             filename=?""")
+        res['select_timestamp'] = \
+            self._session.prepare\
+            ("""
+            SELECT timestamp
+            FROM files_timestamp
+            WHERE
+            filename=?""")
 
         return res
 
@@ -219,6 +226,17 @@ class Cassandra_Files(Cassandra_Base):
              [cassandra_fn]).one()[0]
 
         return res != 0
+
+
+    def get_timestamp(self, cassandra_fn):
+        res = self._session.execute\
+            (self._queries['select_timestamp'],
+             [cassandra_fn]).one()
+
+        if res is None:
+            return res
+
+        return float(res[0])
 
 
     def download(self, cassandra_fn, ofn):

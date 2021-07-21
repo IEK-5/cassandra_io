@@ -21,6 +21,7 @@ def test_files(ips = ['172.17.0.2']):
         assert 'dummy_' not in cfs
 
         cfs.download('dummy','dummy_test')
+        cfs.get_timestamp('dummy')
         h_original = file_hash('dummy')
         h_download = file_hash('dummy_test')
         h_bytesio = get_hash\
