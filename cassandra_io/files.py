@@ -203,6 +203,10 @@ class Cassandra_Files(Cassandra_Base):
             (self._queries['select_chunk_id'],
              [filename, timestamp])
 
+        # if file is empty no chunks are available
+        if not chunk_order:
+            return
+
         for chunk_id in chunk_order:
             yield self._session.execute\
                 (self._queries['select_chunk'],
