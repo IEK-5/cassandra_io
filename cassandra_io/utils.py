@@ -31,9 +31,13 @@ def write_by_chunks(generator, ofn):
     :ofn: output filename
 
     """
-    with open(ofn, 'wb') as f:
-        for data in generator:
-            f.write(data)
+    try:
+        with open(ofn, 'wb') as f:
+            for data in generator:
+                f.write(data)
+    except Exception as e:
+        remove_file(ofn)
+        raise e
 
 
 def write_bytesio_by_chunk(generator):
