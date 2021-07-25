@@ -119,3 +119,19 @@ def bbox2hash(bbox, hash_length):
            (np.arange(bbox[0],bbox[2] + by[0],by[0]),
             np.arange(bbox[1],bbox[3] + by[1],by[1])))
     return list(set(res))
+
+
+def bboxes2hash(bbox_list, hash_length):
+    """Same as bbox2hash, but accept an iterable
+
+    :bbox_list: list of bounding boxes
+
+    """
+    res = set()
+    for bbox in bbox_list:
+        res = res.union\
+            (bbox2hash\
+             (bbox = bbox,
+              hash_length = hash_length))
+
+    return list(res)

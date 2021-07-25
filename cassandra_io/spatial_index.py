@@ -6,7 +6,7 @@ from shapely import geometry
 from cassandra import query
 
 from cassandra_io.base import Cassandra_Base
-from cassandra_io.utils import bbox2hash
+from cassandra_io.utils import bbox2hash, bboxes2hash
 
 from cassandra_io.polygon_index import \
     Polygon_File_Index
@@ -201,22 +201,22 @@ class Cassandra_Spatial_Index(Cassandra_Base):
              [data_id, data_s])
 
 
-    def _query_bbox(self, bbox):
+    def _query_bbox(self, bbox_list):
         """Query data_ids from the Cassandra Spatial Index
 
-        :bbox: bounding box of the query
+        :bbox_list: list of bounding box of the query
 
         :return: a list of data_ids that *might have* a non-zero
         intersection with a desired bbox
 
         """
         cur_hash = self._hash_min
-        hashes = bbox2hash(bbox, cur_hash)
+        hashes = bboxes2hash(bbox_list, cur_hash)
         data_ids = []
 
         while len(hashes):
             hashes = set(hashes)\
-                .intersection(bbox2hash(bbox, cur_hash))
+                .intersection(bboxes2hash(bbox_list, cur_hash))
             q_res = self._session.execute\
                 (self._queries['select_hash%d' % cur_hash],
                  query.ValueSequence\
@@ -251,12 +251,8 @@ class Cassandra_Spatial_Index(Cassandra_Base):
                 polygons = geometry.multipolygon.MultiPolygon\
                     ([geometry.polygon.Polygon(x) for x in polygons])
 
-        data_ids = set()
-        for pl in polygons:
-            data_ids = data_ids.union\
-                (self._query_bbox\
-                 (self._polygon2bbox\
-                  (pl, lon_first)))
+        bboxes = [self._polygon2bbox(pl, lon_first) for pl in polygons]
+        data_ids = self._query_bbox(bboxes)
 
         index = Polygon_File_Index()
         for data_id in data_ids:
