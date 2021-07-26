@@ -1,3 +1,4 @@
+import logging
 import json
 import hashlib
 import geohash
@@ -267,19 +268,32 @@ class Cassandra_Spatial_Index(Cassandra_Base):
                 polygons = geometry.multipolygon.MultiPolygon\
                     ([geometry.polygon.Polygon(x) for x in polygons])
 
+        logging.debug("intersect: BEGIN _polygon2bbox")
         bboxes = [self._polygon2bbox(pl, lon_first) for pl in polygons]
+        logging.debug("intersect: END _polygon2bbox")
+        logging.debug("intersect: BEGIN _query_bbox")
         data_ids = list(set(self._query_bbox(bboxes)))
+        logging.debug("intersect: END _query_bbox")
 
         index = Polygon_File_Index()
         for data_chunk in _chunker(data_ids, size = chunk_size):
+            logging.debug("intersect: BEGIN _load_many")
             datas = self._load_many(data_chunk)
+            logging.debug("intersect: END _load_many")
 
-            for data in datas:
+            for i, data in enumerate(datas):
+                logging.debug("intersect: enumerate %d" % i)
+
+                logging.debug("intersect: BEGIN polygon.intesects")
                 # ignore data that has no intersection
                 if not polygons.intersects\
                    (geometry.polygon.Polygon(data['polygon'])):
+                    logging.debug("intersect: END polygon.intesects")
                     continue
+                logging.debug("intersect: END polygon.intesects")
 
+                logging.debug("intersect: BEGIN insert")
                 index.insert(data)
+                logging.debug("intersect: END insert")
 
         return index

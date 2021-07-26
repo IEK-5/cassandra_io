@@ -1,3 +1,4 @@
+import logging
 import time
 
 from cassandra_io.base import Cassandra_Base
@@ -208,10 +209,20 @@ class Cassandra_Files(Cassandra_Base):
             return
 
         for chunk_id in chunk_order:
-            yield self._session.execute\
-                (self._queries['select_chunk'],
-                 [chunk_id[0]])\
-                 .one()[0]
+            try:
+                yield self._session.execute\
+                    (self._queries['select_chunk'],
+                     [chunk_id[0]])\
+                     .one()[0]
+            except Exception as e:
+                logging.error("""
+                _get_file_chunks
+                ERROR: %s
+                filename: %s
+                timestamp: %s
+                chunk_id: %s
+                """ % (str(e),str(filename), str(timestamp), str(chunk_id)))
+                raise e
 
 
     def _delete(self, files):
@@ -252,6 +263,11 @@ class Cassandra_Files(Cassandra_Base):
 
         :return: nothing
         """
+        logging.debug("""
+        cassandra_io:files.py:download
+        cassandra_fn: %s
+        ofn: %s
+        """ % (cassandra_fn, ofn))
         write_by_chunks(self._get_file_chunks(cassandra_fn),
                         ofn = ofn)
 
