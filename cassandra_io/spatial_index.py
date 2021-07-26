@@ -18,6 +18,11 @@ def hash_string(string):
     return h.hexdigest()
 
 
+def _chunker(seq, size):
+    return (seq[pos:pos + size] \
+            for pos in range(0, len(seq), size))
+
+
 class Cassandra_Spatial_Index(Cassandra_Base):
     """Store index with a geohash tables
 
@@ -115,7 +120,7 @@ class Cassandra_Spatial_Index(Cassandra_Base):
             ("""
             SELECT data
             FROM data
-            WHERE data_id=?""")
+            WHERE data_id in ?""")
 
         for i in range(self._hash_min, self._hash_max + 1):
             res['select_hash%d' % i] = \
@@ -138,8 +143,15 @@ class Cassandra_Spatial_Index(Cassandra_Base):
     def _load(self, data_id):
         data = self._session.execute\
             (self._queries['select_data'],
-             [data_id]).one()[0]
+             [[data_id]]).one()[0]
         return json.loads(data)
+
+
+    def _load_many(self, data_ids):
+        data = self._session.execute\
+            (self._queries['select_data'],
+             [data_ids])
+        return [json.loads(x[0]) for x in data]
 
 
     def _polygon2bbox(self, polygon, lon_first):
@@ -234,11 +246,15 @@ class Cassandra_Spatial_Index(Cassandra_Base):
         return data_ids
 
 
-    def intersect(self, polygons, lon_first = True):
+    def intersect(self, polygons, lon_first = True,
+                  chunk_size = 2**15):
         """Produce an index that has an intersection with a given polygons
 
         :polygons: either a list of coordinate tuples, or a
         geometry.Polygon or geometry.MultiPolygon
+
+        :chunk_size: number of data entries to query per
+        iteration. One spatial index entry is about 500 bytes.
 
         """
         if not isinstance(polygons, geometry.multipolygon.MultiPolygon):
@@ -252,17 +268,18 @@ class Cassandra_Spatial_Index(Cassandra_Base):
                     ([geometry.polygon.Polygon(x) for x in polygons])
 
         bboxes = [self._polygon2bbox(pl, lon_first) for pl in polygons]
-        data_ids = self._query_bbox(bboxes)
+        data_ids = list(set(self._query_bbox(bboxes)))
 
         index = Polygon_File_Index()
-        for data_id in data_ids:
-            data = self._load(data_id)
+        for data_chunk in _chunker(data_ids, size = chunk_size):
+            datas = self._load_many(data_chunk)
 
-            # ignore data that has no intersection
-            if not polygons.intersects\
-               (geometry.polygon.Polygon(data['polygon'])):
-                continue
+            for data in datas:
+                # ignore data that has no intersection
+                if not polygons.intersects\
+                   (geometry.polygon.Polygon(data['polygon'])):
+                    continue
 
-            index.insert(data)
+                index.insert(data)
 
         return index
