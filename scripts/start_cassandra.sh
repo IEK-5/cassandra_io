@@ -1,5 +1,6 @@
 #!/bin/bash
 
+cd $(dirname $(realpath "$0"))
 cd $(git rev-parse --show-toplevel)
 
 
