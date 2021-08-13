@@ -31,12 +31,16 @@ class Cassandra_Files(Cassandra_Base):
     """
 
 
-    def __init__(self, keyspace_suffix='', chunk_size = 1048576,
+    def __init__(self, keyspace_suffix='',
+                 chunk_size = 1048576,
+                 timeout = 120,
                  **kwargs):
         """
         :keyspace_suffix: suffix of the keyspace
 
         :chunk_size: size of chunks to write for files
+
+        :timeout: cluster session default_timeout
 
         :kwargs: arguments passed to Cassandra_Base
 
@@ -48,6 +52,7 @@ class Cassandra_Files(Cassandra_Base):
         self._chunk_size = chunk_size
 
         self._session = self._cluster.connect(self._keyspace)
+        self._session.default_timeout = timeout
         queries = self._create_tables_queries()
         for _, query in queries.items():
             self._session.execute(query)

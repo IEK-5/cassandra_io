@@ -31,7 +31,8 @@ class Cassandra_Spatial_Index(Cassandra_Base):
 
     """
 
-    def __init__(self, hash_min = 2, depth = 3, delta = 1.5, **kwargs):
+    def __init__(self, hash_min = 2, depth = 3, delta = 1.5,
+                 timeout = 120, **kwargs):
         """Init
 
         :hash_min, depth: defines a range of lengths used hash
@@ -39,6 +40,8 @@ class Cassandra_Spatial_Index(Cassandra_Base):
 
         :delta: determines how larger the geohash box should be when
         splitting data onto subgeohash
+
+        :timeout: cluster session default_timeout
 
         :kwargs: arguments passed to Cassandra_Base
 
@@ -64,6 +67,7 @@ class Cassandra_Spatial_Index(Cassandra_Base):
             % (self._hash_min, self._hash_max)
         super().__init__(**kwargs)
         self._session = self._cluster.connect(self._keyspace)
+        self._session.default_timeout = timeout
         queries = self._create_tables_queries()
         for _, query in queries.items():
             self._session.execute(query)
