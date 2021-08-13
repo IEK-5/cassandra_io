@@ -87,6 +87,13 @@ class Cassandra_Files(Cassandra_Base):
             filename text,
             timestamp text,
             PRIMARY KEY(filename))"""
+        res['create_inode_filename'] = """
+            CREATE TABLE IF NOT EXISTS
+            inode_filename
+            (
+            chunk_id text,
+            filename text,
+            PRIMARY KEY(chunk_id, filename))"""
 
         return res
 
@@ -107,6 +114,11 @@ class Cassandra_Files(Cassandra_Base):
             INSERT INTO files_timestamp
             (filename, timestamp)
             VALUES (%s, %s)"""
+        res['insert_inode_filename'] = """
+            INSERT INTO inode_filename
+            (chunk_id, filename)
+            VALUES (%s, %s)
+            IF NOT EXISTS"""
 
         return res
 
@@ -132,6 +144,13 @@ class Cassandra_Files(Cassandra_Base):
             ("""
             DELETE FROM files_timestamp
             WHERE filename=?
+            IF EXISTS""")
+        res['delete_from_inode_filename'] = \
+            self._session.prepare\
+            ("""
+            DELETE FROM inode_filename
+            WHERE chunk_id=?
+            and filename=?
             IF EXISTS""")
 
         return res
@@ -330,14 +349,7 @@ class Cassandra_Files(Cassandra_Base):
 
         for chunk_order, data in enumerate\
             (read_by_chunks(ifn, self._chunk_size)):
-            # hashing timestamp and filename prevents problems with
-            # files deleting. however, this does not allow
-            # deduplication, e.g. two identical files will occupy
-            # double the size. alternatively, one can keep number of
-            # 'links' for every chunk_id, however this solution
-            # involves counters, and they can be buggy in cassandra.
-            chunk_id = hash_any((cassandra_fn,
-                                 timestamp, data))
+            chunk_id = hash_any(data)
             self._session.execute\
                 (self._queries['insert_files'],
                  (cassandra_fn, timestamp,
