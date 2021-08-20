@@ -32,6 +32,7 @@ def write_by_chunks(generator, ofn):
 
     """
     try:
+        os.makedirs(os.path.dirname(ofn), exist_ok = True)
         with open(ofn, 'wb') as f:
             for data in generator:
                 f.write(data)
