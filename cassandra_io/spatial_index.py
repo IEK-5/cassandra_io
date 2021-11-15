@@ -66,7 +66,9 @@ class Cassandra_Spatial_Index(Cassandra_Base):
         kwargs['keyspace'] += '_hash_lengths_%d_%d' \
             % (self._hash_min, self._hash_max)
         super().__init__(**kwargs)
+        logging.debug("Cassandra_Spatial_Index: before _cluster.connect")
         self._session = self._cluster.connect(self._keyspace)
+        logging.debug("Cassandra_Spatial_Index: after _cluster.connect")
         self._session.default_timeout = timeout
         queries = self._create_tables_queries()
         for _, query in queries.items():
