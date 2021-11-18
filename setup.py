@@ -26,7 +26,7 @@ def find_executable(path):
 
 setuptools.setup(
     name="cassandra_io",
-    version="0.1",
+    version="0.1.1",
     author="Evgenii Sovetkin",
     author_email="e.sovetkin@gmail.com",
     description="Few tools to store files in cassandra",
